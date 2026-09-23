@@ -2,6 +2,8 @@
 
 完整的姓名五格数理测算与网感名生成工具。
 
+**跨平台支持：** ✅ macOS · ✅ Linux · ✅ Windows（Python 3.8+）
+
 ## 功能模块
 
 ### 1. 五格数理测算
@@ -21,6 +23,32 @@ pip install -r requirements.txt
 必需依赖：
 - `opencc-python-reimplemented` - 繁简体转换
 - `pypinyin` - 音韵分析
+
+### 安装到 Claude Code Skill 目录
+
+**macOS / Linux：**
+```bash
+git clone https://github.com/azazlf09/name-wuge-skill.git ~/.claude/skills/name-wuge
+cd ~/.claude/skills/name-wuge && pip3 install -r requirements.txt
+```
+
+**Windows（Git Bash）：**
+```bash
+git clone https://github.com/azazlf09/name-wuge-skill.git ~/.claude/skills/name-wuge
+cd ~/.claude/skills/name-wuge && pip install -r requirements.txt
+```
+
+### 缓存路径（跨平台自动）
+
+完整康熙字典（~3MB）首次运行自动下载，缓存位置：
+
+| 系统 | 缓存目录 |
+|------|---------|
+| macOS | `~/.cache/name_skill/kangxi_full.json` |
+| Linux | `~/.cache/name_skill/kangxi_full.json` |
+| Windows | `C:\Users\<用户>\.cache\name_skill\kangxi_full.json` |
+
+也可通过环境变量 `SKILL_CACHE_DIR` 自定义。
 
 ### 测试验证
 
