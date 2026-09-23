@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# 康熙字典完整数据缓存（约 3MB，运行时自动下载）
+scripts/kangxi_full.json
+scripts/kangxi_full_cache.json
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# 私有配置
+.clawhub/
