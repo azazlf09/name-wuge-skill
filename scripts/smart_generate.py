@@ -4,7 +4,7 @@
 ║                                                          ║
 ║  用户一句自然语言 → 自动匹配专题字库 → 干净排版输出         ║
 ║                                                          ║
-║  内置 8 大专题池：                                         ║
+║  内置 9 大专题池：                                         ║
 ║    · trendy    - 网感/时尚/年轻/潮流                       ║
 ║    · noble     - 达官贵人/贵气/世家/名门                   ║
 ║    · royal     - 皇女公主/皇室/帝王/尊贵                   ║
@@ -13,6 +13,7 @@
 ║    · sweet     - 甜美/初恋/JK/少女                         ║
 ║    · debut     - 出道/明星/艺人/网红                       ║
 ║    · literary  - 文艺/古典/诗意/书香                       ║
+║    · digital   - 数字人/虚拟偶像（复姓池+全名四字，v3.1）    ║
 ║                                                          ║
 ║  内置规则：                                                ║
 ║    · 默认只保总格为吉                                      ║
@@ -30,16 +31,34 @@ import re
 from typing import Optional, List
 
 # ─── Windows UTF-8 自动包装（分享给别人第一坑） ───
+# 仅在 stdout 尚未是 UTF-8 时包装，避免外部已包装导致 I/O on closed file
 if sys.platform == "win32":
     try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+        _cur = getattr(sys.stdout, "encoding", "") or ""
+        if "utf" not in _cur.lower():
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        _cur_err = getattr(sys.stderr, "encoding", "") or ""
+        if "utf" not in _cur_err.lower():
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     except Exception:
         pass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from name_wuge import get_kangxi_strokes, calc_wuge
+from name_wuge import get_kangxi_strokes, calc_wuge, to_traditional
+
+
+def _stroke_of(ch: str, strokes: dict) -> int:
+    """显示层笔画：优先按繁体键查 calc 结果，fallback 按繁体查康熙"""
+    t = to_traditional(ch)
+    v = strokes.get(t)
+    if v is None:
+        v = strokes.get(ch)
+    if v is None:
+        v = get_kangxi_strokes(t)
+    if v is None:
+        v = get_kangxi_strokes(ch)
+    return v
 
 
 # ═══════════════════════════════════════════════
@@ -62,6 +81,22 @@ COMMON_SURNAMES = [
 COMPOUND_SURNAMES = [
     "欧阳","司马","上官","诸葛","皇甫","令狐","司徒","司空",
     "长孙","宇文","慕容","东方","南宫","西门","轩辕","独孤"
+]
+
+# ═══ 完整复姓池（数字人/虚拟偶像专用，v3.1）═══
+# 用户指定 60 姓（已剔除"吴铭"——非复姓）+ 酌情增补 5 姓
+COMPOUND_SURNAMES_FULL = [
+    # 用户指定
+    "欧阳","上官","司马","诸葛","东方","南宫","端木","令狐",
+    "公孙","司徒","司空","轩辕","慕容","宇文","赫连","皇甫",
+    "拓跋","夏侯","尉迟","公羊","澹台","申屠","仲孙","钟离",
+    "长孙","微生","漆雕","乐正","宰父","谷梁","段干","百里",
+    "呼延","东郭","南门","羊舌","西门","第五","即墨","达奚",
+    "褚师","万俟","闻人","亓官","颛孙","壤驷","公良","公西",
+    "公冶","闾丘","子车","夹谷","贯丘","公皙","南荣","东里",
+    "东宫","仲长","子书","子桑",
+    # 酌情增补
+    "独孤","鲜于","淳于","公输","司寇",
 ]
 
 NOBLE_SURNAMES = [
@@ -199,7 +234,7 @@ THEMES = {
             list("希依琪琦绮溪熙曦栀芷祺祈奇琴筝伶玲铃凌菱霓妮怡宜仪漪薇微"),
             list("苏舒菀雨羽语瑜俞愉予妤芋素芙菲珠竹初橘菊柚姝纾"),
             list("樱桃杏梨莓桂茉莉蕊薇荷莲兰梅菊桉栀"),
-            list("糖蜜甜暖软柔萌喵咪奶乳橙檬"),
+            list("糖蜜甜暖软柔萌喵咪橙檬"),
         ],
         "pools_male": [],
     },
@@ -239,6 +274,34 @@ THEMES = {
             list("婉宁柔慧慕思念清和"),
         ],
     },
+    # ── 数字人·虚拟偶像（v3.1）──
+    # 规则：姓氏 100% 取自完整复姓池，强制双名 → 全名固定四字
+    "digital": {
+        "label": "数字人",
+        "surnames": COMPOUND_SURNAMES_FULL,
+        "compound_ratio": 1.0,          # 只用复姓
+        "no_single_name": True,          # 强制双名，全名四字
+        "pools_male": [
+            # 光曜感：数字神明 / 全息偶像
+            list("曜曦珩珅昀晏旭煜晗昭晟"),
+            # 冷冽感：未来战神 / 机甲气场
+            list("夜凛烬离冥渊霄阆川霄"),
+            # 墨白感：东方赛博 / 山水全息
+            list("墨白玄素岚辰宇澈书棋琴"),
+            # 珍异感：稀有辨识度
+            list("琛珏琮璞璆翎鹤泠聿弈策"),
+        ],
+        "pools_female": [
+            # 甜灵感：虚拟歌姬 / 猫系女友
+            list("璃玥樱汐雪铃音梦兮萌茜"),
+            # 清冷感：AI 神女 / 月系美人
+            list("月霜星泠语浅宁晚棠湘蘅"),
+            # 华彩感：全息舞台 / 千面偶像
+            list("瑶璇琼珂璎珞绫绮绾纨黛"),
+            # 珍异感：稀有辨识度
+            list("珏琀翾菡菱桉栀栾虔窈妤"),
+        ],
+    },
 }
 
 
@@ -257,6 +320,7 @@ KEYWORD_MAP = [
     (["甜","可爱","初恋","少女","jk","软","萌","嗲","乖巧","甜妹"], "sweet"),
     (["出道","明星","艺人","偶像","爱豆","网红","主播","流量"], "debut"),
     (["文艺","古典","诗","书香","典雅","雅","书卷","儒","古风"], "literary"),
+    (["数字人","数字偶像","虚拟人","虚拟偶像","虚拟主播","vup","vtuber","中之人"], "digital"),
 ]
 
 # 性别关键词
@@ -279,8 +343,16 @@ def parse_query(query: str) -> dict:
             break
     theme = theme or "trendy"
 
-    # 性别
+    # 数量
+    count = 20
+    m = re.search(r"(\d+)\s*[个位]?", query)
+    if m:
+        count = min(max(int(m.group(1)), 1), 100)
+
+    # 性别（"男女各"类表述不锁定单性别，走 auto 混合池）
     gender = "auto"
+    if any(kw in q for kw in ["男女各", "男女生", "男孩女孩", "男宝女宝", "男女宝宝"]):
+        return {"theme": theme, "gender": "auto", "count": count}
     for kw in FEMALE_HINT:
         if kw in q:
             gender = "female"
@@ -290,12 +362,6 @@ def parse_query(query: str) -> dict:
             if kw in q:
                 gender = "male"
                 break
-
-    # 数量
-    count = 20
-    m = re.search(r"(\d+)\s*[个位]?", query)
-    if m:
-        count = min(max(int(m.group(1)), 1), 100)
 
     return {"theme": theme, "gender": gender, "count": count}
 
@@ -322,9 +388,9 @@ def _score(surname: str, given_chars: List[str]):
 def _format(surname: str, given_chars: List[str], score: int, zong: int, theme_label: str, strokes: dict) -> str:
     parts = []
     for ch in surname:
-        parts.append(f"{ch}({strokes.get(ch, get_kangxi_strokes(ch))})")
+        parts.append(f"{ch}({_stroke_of(ch, strokes)})")
     for ch in given_chars:
-        parts.append(f"{ch}({strokes.get(ch, get_kangxi_strokes(ch))})")
+        parts.append(f"{ch}({_stroke_of(ch, strokes)})")
     strokes_str = "+".join(parts)
     full = surname + "".join(given_chars)
     return f"【{full}】风格:{theme_label} 笔画:{strokes_str} 评分:{score} (总格:{zong}-吉)"
@@ -359,15 +425,17 @@ def generate(
     for _ in range(max_attempts):
         if len(results) >= count * 4:
             break
-        # 姓氏
+        # 姓氏（compound_ratio>=1.0 表示 surnames 本身就是复姓池，直接取）
         if surname:
             sur = surname
+        elif compound_ratio >= 1.0:
+            sur = random.choice(surnames)
         elif random.random() < compound_ratio:
             sur = random.choice(COMPOUND_SURNAMES)
         else:
             sur = random.choice(surnames)
-        # 单双名（20% 单名，80% 双名）
-        if random.random() < 0.2:
+        # 单双名（20% 单名，80% 双名；digital 主题强制双名→全名四字）
+        if random.random() < 0.2 and not conf.get("no_single_name", False):
             chars = [random.choice(random.choice(pools))]
         else:
             p1 = random.choice(pools)

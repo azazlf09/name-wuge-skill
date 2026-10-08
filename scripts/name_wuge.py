@@ -38,8 +38,18 @@ _to_simp = opencc.OpenCC("t2s")   # 繁体→简体
 
 
 def to_traditional(name: str) -> str:
-    """将字符串转为繁体（只转换有繁简差异的字）"""
-    return _to_trad.convert(name)
+    """将字符串转为繁体（只转换有繁简差异的字）
+
+    特例覆写（历史复姓，OpenCC 词库处理有误）：
+    · 万俟(mòqí)：词库把"万俟"当专有词跳过转换，"万"须为"萬"(15画)
+    · 段干：姓氏之"干"为传承字，OpenCC 误转为"段幹"
+    """
+    t = _to_trad.convert(name)
+    if t.startswith("万俟"):
+        t = "萬俟" + t[2:]
+    if t.startswith("段干") or t.startswith("段幹"):
+        t = "段干" + t[2:]
+    return t
 
 
 def to_simplified(name: str) -> str:
