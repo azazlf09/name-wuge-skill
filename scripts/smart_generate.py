@@ -349,9 +349,11 @@ def parse_query(query: str) -> dict:
     if m:
         count = min(max(int(m.group(1)), 1), 100)
 
-    # 性别（"男女各"类表述不锁定单性别，走 auto 混合池）
+    # 性别（"男女各"/"不限"类表述不锁定单性别，走 auto 混合池）
     gender = "auto"
-    if any(kw in q for kw in ["男女各", "男女生", "男孩女孩", "男宝女宝", "男女宝宝"]):
+    if any(kw in q for kw in ["男女各", "男女生", "男孩女孩", "男宝女宝", "男女宝宝",
+                              "男女不限", "不限男女", "不限性别", "性别不限",
+                              "男女均可", "男女都行", "男女都要", "混合"]):
         return {"theme": theme, "gender": "auto", "count": count}
     for kw in FEMALE_HINT:
         if kw in q:
