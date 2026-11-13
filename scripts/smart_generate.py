@@ -95,8 +95,20 @@ COMPOUND_SURNAMES_FULL = [
     "褚师","万俟","闻人","亓官","颛孙","壤驷","公良","公西",
     "公冶","闾丘","子车","夹谷","贯丘","公皙","南荣","东里",
     "东宫","仲长","子书","子桑",
-    # 酌情增补
+    # 酌情增补（v3.1）
     "独孤","鲜于","淳于","公输","司寇",
+    # v3.2 扩充：春秋战国世家（40 姓）
+    "太史","太叔","太宰","左丘","左师","右师","中行","王孙",
+    "王叔","公叔","公仲","公伯","公仪","公乘","公山","公玉",
+    "公祖","公夏","子服","子家","叔孙","季孙","孟孙","臧孙",
+    "司城","东门","南郭","北门","巫马","步叔","濮阳","梁丘",
+    "毋丘","新垣","东野","少正","屠岸","主父","雍门","相里",
+    # v3.2 扩充：汉唐魏晋世家（12 姓）
+    "周生","信都","吾丘","石作","士孙","索卢","王官","章仇",
+    "诸梁","祝其","仲梁","先轸",
+    # v3.2 扩充：少数民族汉化复姓（13 姓）
+    "尔朱","贺兰","贺拔","贺若","斛律","豆卢","乞伏","秃发",
+    "沮渠","哥舒","仆固","乙弗","完颜",
 ]
 
 NOBLE_SURNAMES = [
@@ -388,11 +400,14 @@ def _score(surname: str, given_chars: List[str]):
 
 
 def _format(surname: str, given_chars: List[str], score: int, zong: int, theme_label: str, strokes: dict) -> str:
+    # 整串转繁后再逐字拆，避免多音字在复姓中误转（如"秃发"的"发"应作"髮"15画而非"發"12画）
+    trad_sur = to_traditional(surname)
+    trad_given = to_traditional("".join(given_chars))
     parts = []
-    for ch in surname:
-        parts.append(f"{ch}({_stroke_of(ch, strokes)})")
-    for ch in given_chars:
-        parts.append(f"{ch}({_stroke_of(ch, strokes)})")
+    for i, ch in enumerate(surname):
+        parts.append(f"{ch}({_stroke_of(trad_sur[i], strokes)})")
+    for i, ch in enumerate(given_chars):
+        parts.append(f"{ch}({_stroke_of(trad_given[i], strokes)})")
     strokes_str = "+".join(parts)
     full = surname + "".join(given_chars)
     return f"【{full}】风格:{theme_label} 笔画:{strokes_str} 评分:{score} (总格:{zong}-吉)"
